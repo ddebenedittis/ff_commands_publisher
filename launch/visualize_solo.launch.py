@@ -19,6 +19,10 @@ def generate_launch_description():
         solo_descr_share_path,
         LaunchConfiguration('config_file_path', default=os.path.join('config', 'rviz', 'standalone.rviz'))
     ])
+    
+    bag_filename = LaunchConfiguration('bag_filename', default='010_move_base')
+    
+    rate = LaunchConfiguration('rate', default='1')
 
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
 
@@ -46,6 +50,10 @@ def generate_launch_description():
             package='ff_commands_publisher',
             executable='ff_commands_publisher_node',
             name='ff_commands_publisher_node',
+            parameters=[
+                {'bag_filename': bag_filename},
+                {'rate': rate},
+            ],
             shell=True,
             emulate_tty=True,
             output = 'screen',
