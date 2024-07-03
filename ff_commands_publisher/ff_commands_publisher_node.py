@@ -1,9 +1,7 @@
-import os
 import traceback
 
 import numpy as np
 
-from ament_index_python.packages import get_package_share_directory
 from builtin_interfaces.msg import Time
 import rclpy
 import rclpy.duration
@@ -14,6 +12,8 @@ import rosbag2_py
 from rosbag2_py import Player, PlayOptions
 # from rosbag2_py._info import Info
 from sensor_msgs.msg import JointState
+
+from ff_commands_publisher.utils import get_bag_filepath
 
 
 
@@ -44,8 +44,7 @@ class FFCommandsPublisher(Node):
         
         self.declare_parameter('bag_filename', '010_move_base')
         bag_filename = str(self.get_parameter('bag_filename').get_parameter_value().string_value)
-        print(bag_filename)
-        bag_file_path = self.get_bag_filepath(bag_filename)
+        bag_file_path = get_bag_filepath(bag_filename)
                 
         self.declare_parameter('rate', 1)
         rate = self.get_parameter('rate').get_parameter_value().integer_value
@@ -109,31 +108,6 @@ class FFCommandsPublisher(Node):
         self.last_joint_state_msg.position = positions.tolist()
         
         self.pub_joint_states.publish(self.last_joint_state_msg)
-        
-    def get_bag_filepath(self, bag_filename: str) -> str:
-        """Return the full path to the bag file."""
-        
-        package_share_directory = get_package_share_directory('ff_commands_publisher')
-        bags_directory = f"{package_share_directory}/bags"
-        
-        if os.path.exists(f"{bags_directory}/{bag_filename}/{bag_filename}.mcap"):
-            return f"{bags_directory}/{bag_filename}/{bag_filename}.mcap"
-
-
-        folders = [f for f in os.listdir(bags_directory) if bag_filename in f]
-        if len(folders) == 1:
-            folder = f"{bags_directory}/{folders[0]}"
-            files = [f for f in os.listdir(folder) if f.endswith(".mcap")]
-            if len(files) == 1:
-                self.get_logger().info(f"Opening the bag file {folder}/{files[0]}.")
-                return f"{folder}/{files[0]}"
-            if len(files) > 1:
-                raise ValueError(f"Multiple bag files found in {folder}.")
-                
-        if len(folders) > 1:
-            raise ValueError(f"Multiple folders found with the name {bag_filename}.")
-            
-        raise FileNotFoundError(f"No bag file found for the name {bag_filename}.")
 
 
 def main(args=None):
