@@ -17,7 +17,6 @@ def get_bag_filepath(bag_name: str) -> str:
         folder = f"{bags_directory}/{folders[0]}"
         files = [f for f in os.listdir(folder) if f.endswith(".mcap")]
         if len(files) == 1:
-            self.get_logger().info(f"Opening the bag file {folder}/{files[0]}.")
             return f"{folder}/{files[0]}"
         if len(files) > 1:
             raise ValueError(f"Multiple bag files found in {folder}.")
