@@ -8,6 +8,7 @@ The bags should be recorded with
 ```bash
 ros2 bag record --use_sim_time /joint_states
 ```
+and placed in the `bags` directory.
 
 - Inspect the bag file (plots the joint positions, velocities, and efforts):
 ```bash
