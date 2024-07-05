@@ -49,7 +49,7 @@ class FFCommandsPublisher(Node):
         self.declare_parameter('rate', 1)
         rate = self.get_parameter('rate').get_parameter_value().integer_value
 
-        self.pub_joint_states = self.create_publisher(JointState, '/joint_states', 1)
+        self.pub_joint_states = self.create_publisher(JointState, '/PD_control/command', 1)
 
         # Create the bag reader.
         self.reader = rosbag2_py.SequentialReader()
