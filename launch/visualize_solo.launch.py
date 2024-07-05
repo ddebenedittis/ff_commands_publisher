@@ -23,6 +23,8 @@ def generate_launch_description():
     bag_filename = LaunchConfiguration('bag_filename', default='010_move_base')
     
     rate = LaunchConfiguration('rate', default='1')
+    
+    topic_name = LaunchConfiguration('topic_name', default='/joint_states')
 
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
 
@@ -53,6 +55,7 @@ def generate_launch_description():
             parameters=[
                 {'bag_filename': bag_filename},
                 {'rate': rate},
+                {'topic_name': topic_name},
             ],
             shell=True,
             emulate_tty=True,

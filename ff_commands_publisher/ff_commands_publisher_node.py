@@ -48,8 +48,11 @@ class FFCommandsPublisher(Node):
                 
         self.declare_parameter('rate', 1)
         rate = self.get_parameter('rate').get_parameter_value().integer_value
+        
+        self.declare_parameter('topic_name', '/PD_control/command')
+        topic_name = self.get_parameter('topic_name').get_parameter_value().string_value
 
-        self.pub_joint_states = self.create_publisher(JointState, '/PD_control/command', 1)
+        self.pub_joint_states = self.create_publisher(JointState, topic_name, 1)
 
         # Create the bag reader.
         self.reader = rosbag2_py.SequentialReader()
@@ -81,6 +84,7 @@ class FFCommandsPublisher(Node):
         player = Player()
         play_options = PlayOptions()
         play_options.rate = rate
+        play_options.topic_remapping_options = ['--ros-args', '--remap', f'/joint_states:={topic_name}']
         try:
             player.play(storage_options, play_options)
         except KeyboardInterrupt:
