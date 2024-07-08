@@ -5,7 +5,6 @@ from launch import LaunchDescription
 from launch.actions import ExecuteProcess
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.descriptions import ParameterValue
 
 
 
@@ -13,7 +12,7 @@ def generate_launch_description():
         
     bag_filename = LaunchConfiguration('bag_filename', default='010_move_base')
     
-    rate = LaunchConfiguration('rate', default='1')
+    rate = LaunchConfiguration('rate', default='1.0')
     
     workspace_path = f"{get_package_share_directory('solo12_sim')}/../../../../"
     output_bag_path = f"{workspace_path}/bags/{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"

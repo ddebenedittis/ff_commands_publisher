@@ -46,8 +46,8 @@ class FFCommandsPublisher(Node):
         bag_filename = str(self.get_parameter('bag_filename').get_parameter_value().string_value)
         bag_file_path = get_bag_filepath(bag_filename)
                 
-        self.declare_parameter('rate', 1)
-        rate = self.get_parameter('rate').get_parameter_value().integer_value
+        self.declare_parameter('rate', 1.0)
+        rate = self.get_parameter('rate').get_parameter_value().double_value
         
         self.declare_parameter('topic_name', '/PD_control/command')
         topic_name = self.get_parameter('topic_name').get_parameter_value().string_value
