@@ -6,6 +6,8 @@ from launch_ros.actions import Node
 from launch_ros.descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
+
+
 def generate_launch_description():
     
     solo_descr_share_path = FindPackageShare('solo_description')
@@ -36,7 +38,7 @@ def generate_launch_description():
             executable='robot_state_publisher',
             parameters=[
                 {'use_sim_time': use_sim_time},
-                {'robot_description': ParameterValue(Command(['xacro ', xacro_file_path]), value_type=str)}
+                {'robot_description': ParameterValue(Command(['xacro ', xacro_file_path, ' sim:=True']), value_type=str)}
             ],
         ),
         
