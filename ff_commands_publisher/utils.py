@@ -25,3 +25,15 @@ def get_bag_filepath(bag_name: str) -> str:
         raise ValueError(f"Multiple folders found with the name {bag_name}.")
         
     raise FileNotFoundError(f"No bag file found for the name {bag_name}.")
+
+
+def get_full_bag_filename(bag_name: str) -> str:
+    """Return the full name of the bag file."""
+    
+    bag_filepath = get_bag_filepath(bag_name)
+    print(bag_filepath)
+    
+    bag_full_filename = bag_filepath.split('/')[-2].split('/')[-1]
+    print(bag_full_filename)
+    
+    return bag_full_filename

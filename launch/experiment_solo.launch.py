@@ -15,7 +15,8 @@ def generate_launch_description():
     rate = LaunchConfiguration('rate', default='1.0')
     
     workspace_path = f"{get_package_share_directory('solo12_sim')}/../../../../"
-    output_bag_path = f"{workspace_path}/bags/{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+    time = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+    output_bag_path = f"{workspace_path}/bags/{time}"
     
     print(f"output_bag_path: {output_bag_path}")
         
@@ -35,10 +36,18 @@ def generate_launch_description():
         output = 'screen',
     )
     
-    bag_recorder = ExecuteProcess(
-        cmd=["ros2", "bag", "record", "-a", "-o", output_bag_path,
-             "--storage", "mcap"],
-        output='screen',
+    bag_recorder = Node(
+        package='ff_commands_publisher',
+        executable='bag_recorder',
+        name='bag_recorder',
+        parameters=[
+            {'bag_filename': bag_filename},
+            {'rate': rate},
+            {'time': time},
+        ],
+        shell=True,
+        emulate_tty=True,
+        output = 'screen',
     )
 
     return LaunchDescription([

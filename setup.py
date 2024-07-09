@@ -49,6 +49,7 @@ setup(
         'console_scripts': [
             'ff_commands_publisher_node = ff_commands_publisher.ff_commands_publisher_node:main',
             'bag_inspector = ff_commands_publisher.bag_inspector:main',
+            'bag_recorder = ff_commands_publisher.bag_recorder:main',
         ],
     },
 )
