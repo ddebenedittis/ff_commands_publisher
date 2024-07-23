@@ -24,7 +24,7 @@ def generate_launch_description():
     
     bag_filename = LaunchConfiguration('bag_filename', default='010_move_base')
     
-    rate = LaunchConfiguration('rate', default='1')
+    rate = LaunchConfiguration('rate', default='1.')
     
     topic_name = LaunchConfiguration('topic_name', default='/joint_states')
 
