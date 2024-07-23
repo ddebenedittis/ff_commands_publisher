@@ -14,6 +14,8 @@ def generate_launch_description():
     
     rate = LaunchConfiguration('rate', default='1.0')
     
+    use_ilc = LaunchConfiguration('use_ilc', default='false')
+    
     workspace_path = f"{get_package_share_directory('solo12_sim')}/../../../../"
     time = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     output_bag_path = f"{workspace_path}/bags/{time}"
@@ -30,6 +32,7 @@ def generate_launch_description():
             {'bag_filename': bag_filename},
             {'rate': rate},
             {'topic_name': '/PD_control/command'},
+            {'use_ilc': use_ilc},
         ],
         shell=True,
         emulate_tty=True,

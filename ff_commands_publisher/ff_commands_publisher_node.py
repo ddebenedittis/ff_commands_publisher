@@ -1,3 +1,4 @@
+import threading
 import traceback
 
 import numpy as np
@@ -5,6 +6,7 @@ import numpy as np
 from builtin_interfaces.msg import Time
 import rclpy
 import rclpy.duration
+import rclpy.executors
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.serialization import deserialize_message
@@ -13,6 +15,7 @@ from rosbag2_py import Player, PlayOptions
 # from rosbag2_py._info import Info
 from sensor_msgs.msg import JointState
 
+from ff_commands_publisher.ilc import ILC
 from ff_commands_publisher.utils import get_bag_filepath
 
 
@@ -43,14 +46,19 @@ class FFCommandsPublisher(Node):
         # ============================ Parameters ============================ #
         
         self.declare_parameter('bag_filename', '010_move_base')
-        bag_filename = str(self.get_parameter('bag_filename').get_parameter_value().string_value)
-        bag_file_path = get_bag_filepath(bag_filename)
-                
+        self.bag_filename = str(self.get_parameter('bag_filename').get_parameter_value().string_value)
+        bag_file_path = get_bag_filepath(self.bag_filename)
+        
         self.declare_parameter('rate', 1.0)
         rate = self.get_parameter('rate').get_parameter_value().double_value
         
         self.declare_parameter('topic_name', '/PD_control/command')
         topic_name = self.get_parameter('topic_name').get_parameter_value().string_value
+        
+        self.declare_parameter('use_ilc', False)
+        self.use_ilc = self.get_parameter('use_ilc').get_parameter_value().bool_value
+        
+        self.ilc_command = None
 
         self.pub_joint_states = self.create_publisher(JointState, topic_name, 1)
 
@@ -80,6 +88,30 @@ class FFCommandsPublisher(Node):
         self.duration = self.last_joint_state_msg.header.stamp.sec \
             + self.last_joint_state_msg.header.stamp.nanosec / 10**9
         
+        # # Reproduce the bag.
+        # player = Player()
+        # play_options = PlayOptions()
+        # play_options.rate = rate
+        # play_options.topic_remapping_options = ['--ros-args', '--remap', f'/joint_states:={topic_name}']
+        # try:
+        #     player.play(storage_options, play_options)
+        # except KeyboardInterrupt:
+        #     pass
+        
+        self.timer_period = 1.0 / 300  # seconds
+        self.time = 0
+        self.timer = self.create_timer(self.timer_period, self.publish_joint_states)
+        
+    def start(self):
+        self.bag_filename = str(self.get_parameter('bag_filename').get_parameter_value().string_value)
+        bag_file_path = get_bag_filepath(self.bag_filename)
+        
+        rate = self.get_parameter('rate').get_parameter_value().double_value
+        topic_name = self.get_parameter('topic_name').get_parameter_value().string_value
+        
+        storage_options: rosbag2_py.StorageOptions = rosbag2_py._storage.StorageOptions(
+            uri=bag_file_path, storage_id='mcap')
+        
         # Reproduce the bag.
         player = Player()
         play_options = PlayOptions()
@@ -89,10 +121,6 @@ class FFCommandsPublisher(Node):
             player.play(storage_options, play_options)
         except KeyboardInterrupt:
             pass
-        
-        self.timer_period = 1.0 / 300  # seconds
-        self.time = 0
-        self.timer = self.create_timer(self.timer_period, self.publish_joint_states)
     
     def publish_joint_states(self):
         self.time += self.timer_period
@@ -117,19 +145,38 @@ class FFCommandsPublisher(Node):
 def main(args=None):
     rclpy.init(args=args)
     traceback_logger = rclpy.logging.get_logger('node_class_traceback_logger')
-        
+    
     try:
+        executor_ff = rclpy.executors.SingleThreadedExecutor()
+        executor_ilc = rclpy.executors.SingleThreadedExecutor()
+        
         ff_pub_node = FFCommandsPublisher()
-        rclpy.spin(ff_pub_node)
+        executor_ff.add_node(ff_pub_node)
+        
+        if ff_pub_node.use_ilc:
+            ilc_node = ILC(ff_pub_node.bag_filename)
+            executor_ilc.add_node(ilc_node)
+            ff_pub_node.ilc_command = ilc_node.get_ilc_command()
+            
+        ilc_thread = threading.Thread(target=executor_ilc.spin, daemon=True)
+        ilc_thread.start()
+        
+        ff_pub_node.start()
+        
+        executor_ff.spin()
     except KeyboardInterrupt:
-        pass
+        if ff_pub_node.use_ilc:
+            ilc_node.save_ilc_iteration()
     except ExternalShutdownException:
-        rclpy.shutdown()
+        pass
     except:
         traceback_logger.error(traceback.format_exc())
-        
+    
     ff_pub_node.destroy_node()
+    ilc_node.destroy_node()
     rclpy.shutdown()
+    
+    ilc_thread.join()
 
 
 if __name__ == '__main__':
