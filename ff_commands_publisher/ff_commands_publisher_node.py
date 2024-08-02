@@ -1,3 +1,4 @@
+import time
 import traceback
 
 import numpy as np
@@ -61,15 +62,25 @@ class FFCommandsPublisher(Node):
         converter_options = rosbag2_py._storage.ConverterOptions('', '')
         self.reader.open(storage_options, converter_options)
         
-        # Extract the last JointState message from the bag.
+        # Extract the first and last JointState message from the bag.
+        # These two are used for the initial and final homing phases.
+        self.first_joint_state_msg = None
         self.last_joint_state_msg = JointState()
         while self.reader.has_next():
             topic, data, _ = self.reader.read_next()
             if topic == '/joint_states':
                 joint_state_msg: JointState = deserialize_message(data, JointState)
+                
+                if self.first_joint_state_msg is None:
+                    self.first_joint_state_msg = joint_state_msg
                 if gt(joint_state_msg.header.stamp, self.last_joint_state_msg.header.stamp):
                     self.last_joint_state_msg = joint_state_msg
+        self.first_joint_positions = np.array(self.first_joint_state_msg.position)
         self.last_joint_positions = np.array(self.last_joint_state_msg.position)
+        
+        # Homing phase at the start of the experiment.
+        self.initial_joint_positions = np.zeros(len(self.last_joint_positions))
+        self.initial_homing_time = 2 / rate
         
         # Homing phase at the end of the experiment.
         self.final_joint_positions = np.zeros(len(self.last_joint_positions))
@@ -79,6 +90,9 @@ class FFCommandsPublisher(Node):
         # self.duration = m.duration.nanoseconds / 10**9
         self.duration = self.last_joint_state_msg.header.stamp.sec \
             + self.last_joint_state_msg.header.stamp.nanosec / 10**9
+            
+        # Initial homing. It is performed only if the robot is not already in the initial configuration.
+        self.initial_homing()
         
         # Reproduce the bag.
         player = Player()
@@ -101,6 +115,23 @@ class FFCommandsPublisher(Node):
         else:
             self.get_logger().info("Finished the feed-forward trajectory.")
             raise KeyboardInterrupt()
+        
+    def initial_homing(self):
+        """Perform the initial homing to bring the robot to the default configuration."""
+        
+        threshold = 1e-2
+        if np.linalg.norm(self.first_joint_positions - self.initial_joint_positions) > threshold:
+            self.timer_period = 1.0 / 300  # seconds
+            self.time = 0
+            while self.time < self.initial_homing_time:
+                self.time += self.timer_period
+                phi = self.time / self.initial_homing_time
+                
+                joint_positions = self.initial_joint_positions + phi * (self.first_joint_positions - self.initial_joint_positions)
+                self.first_joint_state_msg.position = joint_positions.tolist()
+                self.pub_joint_states.publish(self.first_joint_state_msg)
+                
+                time.sleep(self.timer_period)
         
     def final_homing(self):
         """Perform the final homing to bring the robot to the default configuration."""
